@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Netlify Relay — Edge Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --surface: #12171f;
+            --surface-elevated: #181d27;
+            --border: #1e2633;
+            --border-active: #2a3545;
+            --text-primary: #e6edf7;
+            --text-secondary: #8b99ae;
+            --text-muted: #5a6679;
+            --accent: #00c7b7;
+            --accent-glow: rgba(0, 199, 183, 0.35);
+            --accent-2: #6c5ce7;
+            --accent-2-glow: rgba(108, 92, 231, 0.4);
+            --green: #26d98b;
+            --green-glow: rgba(38, 217, 139, 0.3);
+            --orange: #f7a641;
+            --red: #f25c5c;
+            --radius-sm: 8px;
+            --radius: 14px;
+            --radius-lg: 20px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── Animated background grid ── */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 70%);
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+            z-index: 0;
+            animation: orbDrift 14s ease-in-out infinite;
+        }
+        .bg-orb--1 {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-glow);
+            top: -15%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+        .bg-orb--2 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-2-glow);
+            bottom: -20%;
+            right: -8%;
+            animation-delay: -5s;
+            animation-duration: 18s;
+        }
+        .bg-orb--3 {
+            width: 300px;
+            height: 300px;
+            background: rgba(38, 217, 139, 0.18);
+            top: 50%;
+            left: 55%;
+            animation-delay: -9s;
+            animation-duration: 20s;
+        }
+
+        @keyframes orbDrift {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(60px, -40px) scale(1.15);
+            }
+            50% {
+                transform: translate(-30px, 30px) scale(0.9);
+            }
+            75% {
+                transform: translate(-50px, -20px) scale(1.08);
+            }
+        }
+
+        /* ── Main container ── */
+        .dashboard {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 820px;
+            margin: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── Header card ── */
+        .header-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        .header-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent), #009c8f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 24px var(--accent-glow);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 24px var(--accent-glow);
+            }
+            50% {
+                box-shadow: 0 0 40px var(--accent-glow), 0 0 60px rgba(0, 199, 183, 0.2);
+            }
+        }
+        .logo-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+        .title-group h1 {
+            font-family: 'JetBrains Mono', 'Inter', monospace;
+            font-weight: 700;
+            font-size: 1.55rem;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+        .title-group .subtitle {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            padding: 10px 18px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--green);
+            white-space: nowrap;
+            transition: all var(--transition);
+        }
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green-glow);
+            animation: statusBlink 2s ease-in-out infinite;
+        }
+        @keyframes statusBlink {
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 10px var(--green-glow);
+            }
+            50% {
+                opacity: 0.5;
+                box-shadow: 0 0 4px var(--green-glow);
+            }
+        }
+
+        /* ── Stats row ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--accent-glow);
+            opacity: 0.07;
+            pointer-events: none;
+        }
+        .stat-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .stat-value {
+            font-family: 'JetBrains Mono', 'Inter', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        .stat-sub {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .stat-card--accent .stat-value {
+            color: var(--accent);
+        }
+        .stat-card--green .stat-value {
+            color: var(--green);
+        }
+
+        /* ── Route highlight card ── */
+        .route-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transition: all var(--transition);
+        }
+        .route-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+        .route-card .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .code-block {
+            background: #0b0f16;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88rem;
+            color: #abb8cc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        .code-block .prompt {
+            color: var(--green);
+            font-weight: 600;
+            user-select: none;
+        }
+        .code-block .route {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 1rem;
+            background: rgba(0, 199, 183, 0.08);
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.01em;
+        }
+        .code-block .arrow {
+            color: var(--text-muted);
+            margin: 0 2px;
+        }
+        .code-block .dest {
+            color: var(--accent-2);
+            font-weight: 500;
+        }
+        .code-block .badge-edge {
+            display: inline-block;
+            background: var(--accent-2);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 50px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-left: auto;
+            animation: edgeGlow 2.5s ease-in-out infinite;
+        }
+        @keyframes edgeGlow {
+            0%,
+            100% {
+                box-shadow: 0 0 8px var(--accent-2-glow);
+            }
+            50% {
+                box-shadow: 0 0 20px var(--accent-2-glow), 0 0 32px rgba(108, 92, 231, 0.25);
+            }
+        }
+
+        /* ── Connection visualization ── */
+        .viz-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transition: all var(--transition);
+        }
+        .viz-section:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+        .viz-section .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .nodes-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 8px 0;
+        }
+        .node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+        }
+        .node-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            transition: all var(--transition);
+        }
+        .node-dot--client {
+            background: #1a2332;
+            border: 2px solid #3b82f6;
+            color: #60a5fa;
+            box-shadow: 0 0 14px rgba(59, 130, 246, 0.3);
+        }
+        .node-dot--edge {
+            background: #1a1f2e;
+            border: 2px solid var(--accent-2);
+            color: #a78bfa;
+            box-shadow: 0 0 20px var(--accent-2-glow);
+            animation: edgeNodePulse 2.5s ease-in-out infinite;
+        }
+        @keyframes edgeNodePulse {
+            0%,
+            100% {
+                box-shadow: 0 0 20px var(--accent-2-glow);
+            }
+            50% {
+                box-shadow: 0 0 34px rgba(108, 92, 231, 0.55);
+            }
+        }
+        .node-dot--origin {
+            background: #1a2220;
+            border: 2px solid var(--accent);
+            color: #5eead4;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .connector {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        .connector-line {
+            width: 50px;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, var(--border-active) 0, var(--border-active) 6px, transparent 6px, transparent 12px);
+            border-radius: 1px;
+            animation: dashFlow 1.2s linear infinite;
+        }
+        @keyframes dashFlow {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 12px 0;
+            }
+        }
+        .connector-arrow {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin: 0 4px;
+        }
+
+        /* ── Footer ── */
+        .footer-note {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+            padding: 4px 0;
+        }
+        .footer-note span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .dashboard {
+                margin: 12px;
+                gap: 12px;
+            }
+            .header-card {
+                padding: 18px 20px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 14px 16px;
+            }
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            .code-block {
+                font-size: 0.72rem;
+                padding: 12px 14px;
+            }
+            .code-block .route {
+                font-size: 0.8rem;
+            }
+            .connector-line {
+                width: 28px;
+            }
+            .node-dot {
+                width: 36px;
+                height: 36px;
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+
+    <!-- Dashboard -->
+    <main class="dashboard">
+        <!-- Header -->
+        <header class="header-card">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                </div>
+                <div class="title-group">
+                    <h1>Netlify Relay</h1>
+                    <p class="subtitle">Edge Function — Global Relay Network</p>
+                </div>
+            </div>
+            <div class="status-badge">
+                <span class="status-dot"></span> Relaying Live
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card stat-card--accent">
+                <p class="stat-label">Requests / min</p>
+                <p class="stat-value" id="req-count">4,283</p>
+                <p class="stat-sub">↑ 12% vs last hour</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Avg Latency</p>
+                <p class="stat-value">32<span style="font-size:0.7em;color:var(--text-secondary);">ms</span></p>
+                <p class="stat-sub">Edge: 18 regions</p>
+            </div>
+            <div class="stat-card stat-card--green">
+                <p class="stat-label">Uptime</p>
+                <p class="stat-value">99.99<span style="font-size:0.55em;color:var(--text-secondary);">%</span></p>
+                <p class="stat-sub">Last 30 days</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Active Relays</p>
+                <p class="stat-value" id="active-relays">1,247</p>
+                <p class="stat-sub">Across 6 continents</p>
+            </div>
+        </div>
+
+        <!-- Route configuration -->
+        <div class="route-card">
+            <p class="section-label">⚡ Active Route Pattern</p>
+            <div class="code-block">
+                <span class="prompt">$</span>
+                <span>GET</span>
+                <span class="arrow">→</span>
+                <span class="route">/*</span>
+                <span class="arrow">⟶</span>
+                <span class="dest">Edge Function Relay</span>
+                <span class="badge-edge">Lambda · Edge</span>
+            </div>
+            <p style="margin-top:12px;font-size:0.76rem;color:var(--text-secondary);line-height:1.5;">
+                Every incoming request matching <code style="background:rgba(0,199,183,0.08);padding:2px 6px;border-radius:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;">/*</code> is intercepted by the
+                <strong>Edge Function</strong>, processed at the closest edge node, and relayed intelligently —
+                ensuring minimal latency and maximum resilience.
+            </p>
+        </div>
+
+        <!-- Relay visualization -->
+        <div class="viz-section">
+            <p class="section-label">🔗 Live Relay Topology</p>
+            <div class="nodes-row">
+                <div class="node">
+                    <div class="node-dot node-dot--client">🌐</div>
+                    <span>Client</span>
+                </div>
+                <div class="connector">
+                    <span class="connector-line"></span>
+                    <span class="connector-arrow">▶</span>
+                </div>
+                <div class="node">
+                    <div class="node-dot node-dot--edge">⚡</div>
+                    <span>Edge Relay</span>
+                </div>
+                <div class="connector">
+                    <span class="connector-line"></span>
+                    <span class="connector-arrow">▶</span>
+                </div>
+                <div class="node">
+                    <div class="node-dot node-dot--origin">🏠</div>
+                    <span>Origin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <p class="footer-note">
+            Edge Function configured on <span>/*</span> — all traffic flows through the relay · Netlify Global Network
+        </p>
+    </main>
+
+    <!-- Live counter simulation -->
+    <script>
+        (function() {
+            const reqEl = document.getElementById('req-count');
+            const relaysEl = document.getElementById('active-relays');
+
+            function animateCounter(el, base, variance, intervalMs) {
+                let val = base;
+                setInterval(() => {
+                    const delta = Math.floor(Math.random() * variance * 2) - variance;
+                    val = Math.max(0, val + delta);
+                    if (val > base + variance * 3) val = base + Math.floor(Math.random() * variance);
+                    if (val < base - variance) val = base - Math.floor(Math.random() * variance);
+                    el.textContent = val.toLocaleString();
+                }, intervalMs);
+            }
+
+            if (reqEl) animateCounter(reqEl, 4283, 320, 1800);
+            if (relaysEl) animateCounter(relaysEl, 1247, 80, 2200);
+
+            // Subtle parallax on orbs
+            document.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 20;
+                const y = (e.clientY / window.innerHeight - 0.5) * 20;
+                document.querySelectorAll('.bg-orb').forEach((orb, i) => {
+                    const factor = (i + 1) * 0.6;
+                    orb.style.transform = `translate(${x * factor}px, ${y * factor}px)`;
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

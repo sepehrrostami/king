@@ -1,0 +1,14 @@
+{
+  "name": "route",
+  "version": "2.0.0",
+  "description": "Netlify",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'"
+  },
+  "devDependencies": {
+    "netlify-cli": "latest"
+  }
+}
