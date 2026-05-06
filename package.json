@@ -1,6 +1,6 @@
 {
-  "name": "route",
-  "version": "2.0.0",
+  "name": "router",
+  "version": "3.0.0",
   "description": "Netlify",
   "private": true,
   "license": "MIT",
